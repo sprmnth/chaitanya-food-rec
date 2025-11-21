@@ -9,52 +9,124 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
 
   <style>
-    body { margin: 0; font-family: sans-serif; }
+    body { margin: 0; font-family: system-ui, sans-serif; }
     .container { display: flex; height: 100vh; }
-    .left { width: 35%; overflow-y: auto; padding: 20px; }
-    #map { flex: 1; }
+
+    .left {
+      width: 40%;
+      padding: 24px;
+      overflow-y: auto;
+      border-right: 1px solid #eee;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 28px;
+    }
+
+    p { line-height: 1.5; }
+
+    h2 {
+      margin-top: 30px;
+      font-size: 20px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 6px;
+    }
+
+    .card {
+      background: #fafafa;
+      border: 1px solid #ddd;
+      padding: 12px;
+      border-radius: 8px;
+      margin: 14px 0;
+    }
+
+    .card a {
+      color: #0055cc;
+      text-decoration: none;
+    }
+
+    .card a:hover {
+      text-decoration: underline;
+    }
+
+    #map {
+      flex: 1;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="left">
       <h1>Chaitanya Eats</h1>
-      <p>A map of places I love.</p>
+      <p>A curated map of places I love.</p>
       <div id="list">Loading...</div>
     </div>
+
     <div id="map"></div>
   </div>
 
+  <!-- Leaflet -->
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <!-- CSV Parser -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
   <script>
     const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQg-vAmCO5FLM-6KJcGl_aZbIKu8xYVULLPeRMbX-dWyCWblLgc5JmfWaceS5llTPV9YmeCj7ugc1O7/pub?output=csv";
 
+    // Initialize Map
     const map = L.map("map").setView([22.5, 79], 5);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
     Papa.parse(SHEET_URL, {
       download: true,
       header: true,
-      complete: function(res) {
-        const rows = res.data.filter(r => r.lat && r.lng);
-        render(rows);
+      complete: (res) => {
+        const places = res.data.filter(p => p.lat && p.lng);
+        render(places);
       }
     });
 
-    function render(rows) {
+    function render(places) {
       const list = document.getElementById("list");
       list.innerHTML = "";
 
-      rows.forEach(place => {
-        const item = document.createElement("p");
-        item.textContent = `${place.place_name} — ${place.city}`;
-        list.appendChild(item);
+      // Group by city
+      const grouped = {};
+      for (const p of places) {
+        if (!grouped[p.city]) grouped[p.city] = [];
+        grouped[p.city].push(p);
+      }
 
-        const marker = L.marker([+place.lat, +place.lng]).addTo(map);
-        marker.bindPopup(`<b>${place.place_name}</b><br>${place.city}<br>${place.description || ""}`);
-      });
+      // Render city sections + markers
+      for (const city of Object.keys(grouped).sort()) {
+        const header = document.createElement("h2");
+        header.textContent = city;
+        list.appendChild(header);
+
+        grouped[city].forEach(p => {
+          const card = document.createElement("div");
+          card.className = "card";
+
+          card.innerHTML = `
+            <strong>${p.place_name}</strong><br>
+            <em>${p.what_to_order || ""}</em><br>
+            ${p.summary || ""}<br><br>
+            ${p.url ? `<a href="${p.url}" target="_blank">Open in Maps</a>` : ""}
+          `;
+
+          list.appendChild(card);
+
+          // Add map marker
+          const marker = L.marker([+p.lat, +p.lng]).addTo(map);
+          marker.bindPopup(`
+            <strong>${p.place_name}</strong><br>
+            ${city}<br>
+            ${p.what_to_order || ""}<br>
+            ${p.summary || ""}
+          `);
+        });
+      }
     }
   </script>
 </body>
