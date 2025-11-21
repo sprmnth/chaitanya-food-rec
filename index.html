@@ -53,7 +53,6 @@
       margin-bottom: 24px;
     }
 
-    /* Collapsed logic */
     .entries {
       display: block;
     }
@@ -145,6 +144,37 @@
     #map {
       flex: 1;
     }
+
+    /* PHOTO MODAL */
+    #photo-modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    #modal-img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 6px;
+    }
+
+    #modal-prev, #modal-next {
+      position: fixed;
+      top: 50%;
+      font-size: 40px;
+      color: white;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    #modal-prev { left: 40px; }
+    #modal-next { right: 40px; }
+
   </style>
 </head>
 <body>
@@ -159,12 +189,25 @@
     <div id="map"></div>
   </div>
 
+  <!-- PHOTO MODAL -->
+  <div id="photo-modal">
+    <img id="modal-img">
+    <div id="modal-prev">‹</div>
+    <div id="modal-next">›</div>
+  </div>
+
   <!-- JS -->
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
   <script>
     const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQg-vAmCO5FLM-6KJcGl_aZbIKu8xYVULLPeRMbX-dWyCWblLgc5JmfWaceS5llTPV9YmeCj7ugc1O7/pub?output=csv";
+
+    // Convert Drive links
+    function toDirectLink(url) {
+      const match = url.match(/\/d\/(.+?)\//);
+      return match ? `https://drive.google.com/uc?export=view&id=${match[1]}` : null;
+    }
 
     // Initialize map
     const map = L.map("map").setView([22.5, 79], 5);
@@ -175,6 +218,35 @@
     }).addTo(map);
 
     const markers = {};
+
+    // Photo Modal
+    let gallery = [];
+    let galleryIndex = 0;
+
+    function openGallery(arr) {
+      gallery = arr;
+      galleryIndex = 0;
+      document.getElementById("modal-img").src = gallery[0];
+      document.getElementById("photo-modal").style.display = "flex";
+    }
+
+    document.getElementById("photo-modal").addEventListener("click", e => {
+      if (e.target.id !== "modal-img") {
+        document.getElementById("photo-modal").style.display = "none";
+      }
+    });
+
+    document.getElementById("modal-next").addEventListener("click", e => {
+      e.stopPropagation();
+      galleryIndex = (galleryIndex + 1) % gallery.length;
+      document.getElementById("modal-img").src = gallery[galleryIndex];
+    });
+
+    document.getElementById("modal-prev").addEventListener("click", e => {
+      e.stopPropagation();
+      galleryIndex = (galleryIndex - 1 + gallery.length) % gallery.length;
+      document.getElementById("modal-img").src = gallery[galleryIndex];
+    });
 
     Papa.parse(SHEET_URL, {
       download: true,
@@ -198,7 +270,7 @@
       for (const city of Object.keys(grouped).sort()) {
 
         const section = document.createElement("div");
-        section.classList.add("city-section", "collapsed"); // ensures default collapsed
+        section.classList.add("city-section", "collapsed");
 
         const header = document.createElement("h2");
         header.textContent = city;
@@ -210,7 +282,6 @@
 
         list.appendChild(section);
 
-        // Toggle collapse on click
         header.addEventListener("click", () => {
           section.classList.toggle("collapsed");
         });
@@ -218,6 +289,12 @@
         grouped[city].forEach(p => {
           const entry = document.createElement("div");
           entry.className = "entry";
+
+          // Parse photos
+          const photos = (p.photo_urls || "")
+            .split(",")
+            .map(u => toDirectLink(u.trim()))
+            .filter(u => u);
 
           entry.innerHTML = `
             <div class="entry-title">${p.place_name}${p.budget ? " · " + p.budget : ""}</div>
@@ -229,6 +306,7 @@
 
           entriesContainer.appendChild(entry);
 
+          // Marker
           const marker = L.marker([+p.lat, +p.lng]).addTo(map);
           markers[p.place_name] = marker;
 
@@ -242,6 +320,7 @@
           entry.addEventListener("click", () => {
             map.setView(marker.getLatLng(), 15);
             marker.openPopup();
+            if (photos.length > 0) openGallery(photos);
           });
         });
       }
