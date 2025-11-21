@@ -1,82 +1,102 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Chaitanya Eats</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@300;400;600&display=swap" rel="stylesheet">
 
   <style>
-    body { margin: 0; font-family: system-ui, sans-serif; }
-    .container { display: flex; height: 100vh; }
+    body {
+      margin: 0;
+      background: #fdfcf9;
+      font-family: "Crimson Pro", serif;
+      color: #222;
+      line-height: 1.55;
+    }
 
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* LEFT PANEL */
     .left {
-      width: 40%;
-      padding: 24px;
+      width: 38%;
+      padding: 32px;
       overflow-y: auto;
-      border-right: 1px solid #eee;
+      border-right: 1px solid #e5e5e5;
     }
 
     h1 {
-      margin: 0 0 10px;
-      font-size: 28px;
+      margin-top: 0;
+      font-size: 32px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
     }
 
-    p { line-height: 1.5; }
-
     h2 {
-      margin-top: 30px;
-      font-size: 20px;
+      margin-top: 32px;
+      margin-bottom: 12px;
+      font-size: 22px;
       border-bottom: 1px solid #ddd;
-      padding-bottom: 6px;
+      padding-bottom: 4px;
+      font-weight: 600;
     }
 
     .card {
-      background: #fafafa;
-      border: 1px solid #ddd;
-      padding: 12px;
-      border-radius: 8px;
-      margin: 14px 0;
+      padding: 10px 4px;
+      margin-bottom: 14px;
+      cursor: pointer;
+      border-left: 3px solid transparent;
     }
 
-    .card a {
-      color: #0055cc;
-      text-decoration: none;
+    .card:hover {
+      background: #f1f0ec;
+      border-left-color: #7a7265;
     }
 
-    .card a:hover {
-      text-decoration: underline;
-    }
-
+    /* MAP */
     #map {
       flex: 1;
     }
+
   </style>
 </head>
 <body>
+
   <div class="container">
     <div class="left">
       <h1>Chaitanya Eats</h1>
-      <p>A curated map of places I love.</p>
-      <div id="list">Loading...</div>
+      <p>A quiet catalogue of meals enjoyed, indexed by place.</p>
+      <div id="list">Loading…</div>
     </div>
 
     <div id="map"></div>
   </div>
 
-  <!-- Leaflet -->
+  <!-- Leaflet Scripts -->
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-  <!-- CSV Parser -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
   <script>
     const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQg-vAmCO5FLM-6KJcGl_aZbIKu8xYVULLPeRMbX-dWyCWblLgc5JmfWaceS5llTPV9YmeCj7ugc1O7/pub?output=csv";
 
-    // Initialize Map
+    // Initialize map
     const map = L.map("map").setView([22.5, 79], 5);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+
+    // Clean grayscale map tiles
+    L.tileLayer("https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png", {
+      maxZoom: 18,
+    }).addTo(map);
+
+    // Store markers so we can zoom on click
+    const markers = {};
 
     Papa.parse(SHEET_URL, {
       download: true,
@@ -91,43 +111,51 @@
       const list = document.getElementById("list");
       list.innerHTML = "";
 
-      // Group by city
+      // group by city
       const grouped = {};
       for (const p of places) {
         if (!grouped[p.city]) grouped[p.city] = [];
         grouped[p.city].push(p);
       }
 
-      // Render city sections + markers
       for (const city of Object.keys(grouped).sort()) {
         const header = document.createElement("h2");
         header.textContent = city;
         list.appendChild(header);
 
         grouped[city].forEach(p => {
+
+          // Sidebar Card
           const card = document.createElement("div");
           card.className = "card";
-
           card.innerHTML = `
             <strong>${p.place_name}</strong><br>
-            <em>${p.what_to_order || ""}</em><br>
-            ${p.summary || ""}<br><br>
-            ${p.url ? `<a href="${p.url}" target="_blank">Open in Maps</a>` : ""}
+            <span style="color:#555">${p.what_to_order || ""}</span><br>
+            <span style="color:#777; font-size: 14px;">${p.summary || ""}</span>
           `;
-
           list.appendChild(card);
 
-          // Add map marker
+          // Marker
           const marker = L.marker([+p.lat, +p.lng]).addTo(map);
+          markers[p.place_name] = marker;
+
           marker.bindPopup(`
             <strong>${p.place_name}</strong><br>
             ${city}<br>
             ${p.what_to_order || ""}<br>
             ${p.summary || ""}
           `);
+
+          // Make card zoom to marker
+          card.addEventListener("click", () => {
+            map.setView(marker.getLatLng(), 15);
+            marker.openPopup();
+          });
+
         });
       }
     }
   </script>
+
 </body>
 </html>
