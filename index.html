@@ -14,9 +14,9 @@
   <style>
     body {
       margin: 0;
-      background: #fdfcf9;
+      background: #fafaf5;
       font-family: "Crimson Pro", serif;
-      color: #222;
+      color: #1a1a1a;
       line-height: 1.55;
     }
 
@@ -25,66 +25,73 @@
       height: 100vh;
     }
 
-    /* LEFT PANEL */
+    /* LEFT PANEL — journal style */
     .left {
-      width: 40%;
-      padding: 40px;
+      width: 42%;
+      padding: 40px 50px;
       overflow-y: auto;
-      border-right: 1px solid #e5e5e5;
+      border-right: 1px solid #e6e3dd;
     }
 
     h1 {
       margin-top: 0;
-      font-size: 36px;
+      font-size: 34px;
       font-weight: 600;
-      letter-spacing: -0.5px;
+      letter-spacing: -0.4px;
+      margin-bottom: 6px;
     }
 
     p.subtitle {
       color: #666;
-      margin-top: 4px;
-      margin-bottom: 40px;
+      margin-top: 0;
+      margin-bottom: 45px;
       font-size: 15px;
     }
 
+    /* City headers */
     h2 {
-      margin-top: 36px;
-      margin-bottom: 14px;
-      font-size: 22px;
+      margin-top: 48px;
+      margin-bottom: 16px;
+      font-size: 20px;
+      font-weight: 600;
+      color: #333;
       border-bottom: 1px solid #ddd;
-      padding-bottom: 4px;
-      font-weight: 600;
+      padding-bottom: 3px;
+      letter-spacing: 0.2px;
+      text-transform: none;
     }
 
-    .card {
-      padding: 12px 6px;
-      margin-bottom: 18px;
+    /* Entry styling */
+    .entry {
+      margin-bottom: 32px;
       cursor: pointer;
-      border-left: 3px solid transparent;
     }
 
-    .place-title {
-      font-weight: 600;
+    .entry-title {
       font-size: 18px;
-      color: #222;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 4px;
     }
 
-    .meta-row {
+    .entry-meta {
       font-family: "Inter", sans-serif;
-      font-size: 14px;
-      color: #666;
-      margin: 2px 0;
+      font-size: 13.5px;
+      color: #6a6964;
+      margin-bottom: 6px;
     }
 
-    .review {
-      margin-top: 6px;
+    .entry-review {
       font-size: 15px;
-      color: #555;
+      color: #444;
+      margin-bottom: 4px;
     }
 
-    .card:hover {
-      background: #f1f0ec;
-      border-left-color: #7a7265;
+    .entry:hover {
+      background: #f3f1eb;
+      border-radius: 4px;
+      padding-left: 6px;
+      transition: 0.15s;
     }
 
     /* MAP */
@@ -105,7 +112,7 @@
     <div id="map"></div>
   </div>
 
-  <!-- Leaflet Scripts -->
+  <!-- JS -->
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
@@ -115,9 +122,8 @@
     // Initialize map
     const map = L.map("map").setView([22.5, 79], 5);
 
-    // Clean grayscale map tiles
     L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", {
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+      attribution: '&copy; OpenStreetMap & CARTO',
       maxZoom: 18,
     }).addTo(map);
 
@@ -148,18 +154,16 @@
         list.appendChild(header);
 
         grouped[city].forEach(p => {
-          const card = document.createElement("div");
-          card.className = "card";
+          const entry = document.createElement("div");
+          entry.className = "entry";
 
-          card.innerHTML = `
-            <div class="place-title">${p.place_name}</div>
-            <div class="meta-row"><strong>Order:</strong> ${p.what_to_order || ""}</div>
-            <div class="meta-row"><strong>Cuisine:</strong> ${p.cuisine || ""}</div>
-            <div class="meta-row"><strong>Budget:</strong> ${p.budget || ""}</div>
-            <div class="review">${p.review || ""}</div>
+          entry.innerHTML = `
+            <div class="entry-title">${p.place_name} · ${p.what_to_order || ""} ${p.budget ? "· " + p.budget : ""}</div>
+            <div class="entry-meta">${p.cuisine || ""}${p.area ? " · " + p.area : ""}</div>
+            <div class="entry-review">${p.review || ""}</div>
           `;
 
-          list.appendChild(card);
+          list.appendChild(entry);
 
           // Marker
           const marker = L.marker([+p.lat, +p.lng]).addTo(map);
@@ -167,12 +171,11 @@
 
           marker.bindPopup(`
             <strong>${p.place_name}</strong><br>
-            ${p.what_to_order || ""}<br>
+            ${p.what_to_order || ""}<br><br>
             ${p.review || ""}
           `);
 
-          // Zoom on click
-          card.addEventListener("click", () => {
+          entry.addEventListener("click", () => {
             map.setView(marker.getLatLng(), 15);
             marker.openPopup();
           });
