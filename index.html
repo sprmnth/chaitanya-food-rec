@@ -157,13 +157,12 @@
           const entry = document.createElement("div");
           entry.className = "entry";
 
-                  entry.innerHTML = `
+          entry.innerHTML = `
           <div class="entry-title">${p.place_name}${p.budget ? " · " + p.budget : ""}</div>
           <div class="entry-meta">${p.cuisine || ""}${p.area ? " · " + p.area : ""}</div>
           <div class="entry-review">${p.review || ""}</div>
           ${p.what_to_order ? `<div class="entry-meta" style="margin-top:6px;"><strong>What I recommend:</strong> ${p.what_to_order}</div>` : ""}
         `;
-
 
           list.appendChild(entry);
 
