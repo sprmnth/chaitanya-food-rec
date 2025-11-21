@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Chaitanya Eats</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
+
+  <style>
+    body { margin: 0; font-family: sans-serif; }
+    .container { display: flex; height: 100vh; }
+    .left { width: 35%; overflow-y: auto; padding: 20px; }
+    #map { flex: 1; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="left">
+      <h1>Chaitanya Eats</h1>
+      <p>A map of places I love.</p>
+      <div id="list">Loading...</div>
+    </div>
+    <div id="map"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <script>
+    const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQg-vAmCO5FLM-6KJcGl_aZbIKu8xYVULLPeRMbX-dWyCWblLgc5JmfWaceS5llTPV9YmeCj7ugc1O7/pub?output=csv";
+
+    const map = L.map("map").setView([22.5, 79], 5);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+
+    Papa.parse(SHEET_URL, {
+      download: true,
+      header: true,
+      complete: function(res) {
+        const rows = res.data.filter(r => r.lat && r.lng);
+        render(rows);
+      }
+    });
+
+    function render(rows) {
+      const list = document.getElementById("list");
+      list.innerHTML = "";
+
+      rows.forEach(place => {
+        const item = document.createElement("p");
+        item.textContent = `${place.place_name} — ${place.city}`;
+        list.appendChild(item);
+
+        const marker = L.marker([+place.lat, +place.lng]).addTo(map);
+        marker.bindPopup(`<b>${place.place_name}</b><br>${place.city}<br>${place.description || ""}`);
+      });
+    }
+  </script>
+</body>
+</html>
