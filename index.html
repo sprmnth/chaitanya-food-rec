@@ -20,19 +20,12 @@
       line-height: 1.55;
     }
 
-    .entry-meta strong {
-      font-weight: 400;
-      color: #555;
-      font-style: italic;
-    }
-
-
     .container {
       display: flex;
       height: 100vh;
     }
 
-    /* LEFT PANEL — journal style */
+    /* LEFT PANEL — journal */
     .left {
       width: 42%;
       padding: 40px 50px;
@@ -55,23 +48,54 @@
       font-size: 15px;
     }
 
+    /* City section wrapper */
+    .city-section {
+      margin-bottom: 24px;
+    }
+
     /* City headers */
     h2 {
-      margin-top: 48px;
-      margin-bottom: 16px;
+      margin-top: 28px;
+      margin-bottom: 10px;
       font-size: 20px;
       font-weight: 600;
       color: #333;
       border-bottom: 1px solid #ddd;
       padding-bottom: 3px;
       letter-spacing: 0.2px;
-      text-transform: none;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* Collapsed state */
+    .city-section.collapsed .entries {
+      display: none;
+    }
+
+    /* Arrow indicator */
+    h2::after {
+      content: " ▼";
+      font-size: 12px;
+      color: #888;
+    }
+
+    .city-section.collapsed h2::after {
+      content: " ▶";
     }
 
     /* Entry styling */
     .entry {
       margin-bottom: 32px;
       cursor: pointer;
+      padding: 4px 2px;
+      border-left: 3px solid transparent;
+    }
+
+    .entry:hover {
+      background: #f3f1eb;
+      border-left-color: #7a7265;
+      border-radius: 4px;
+      transition: 0.15s;
     }
 
     .entry-title {
@@ -88,17 +112,29 @@
       margin-bottom: 6px;
     }
 
+    .entry-meta strong {
+      font-weight: 400;
+      color: #555;
+      font-style: italic;
+    }
+
     .entry-review {
       font-size: 15px;
       color: #444;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
 
-    .entry:hover {
-      background: #f3f1eb;
-      border-radius: 4px;
-      padding-left: 6px;
-      transition: 0.15s;
+    .maps-link {
+      font-family: "Inter", sans-serif;
+      font-size: 13px;
+      color: #4a4a9e;
+      text-decoration: none;
+      border-bottom: 1px dotted #ccc;
+    }
+
+    .maps-link:hover {
+      color: #2b2b7a;
+      text-decoration: underline;
     }
 
     /* MAP */
@@ -156,24 +192,42 @@
       }
 
       for (const city of Object.keys(grouped).sort()) {
+        // Each city section container
+        const section = document.createElement("div");
+        section.className = "city-section collapsed";
+
+        // City title (clickable)
         const header = document.createElement("h2");
         header.textContent = city;
-        list.appendChild(header);
+        section.appendChild(header);
+
+        // Container for entries inside this city
+        const entriesContainer = document.createElement("div");
+        entriesContainer.className = "entries";
+        section.appendChild(entriesContainer);
+
+        list.appendChild(section);
+
+        // Toggle collapse on click
+        header.addEventListener("click", () => {
+          section.classList.toggle("collapsed");
+        });
 
         grouped[city].forEach(p => {
           const entry = document.createElement("div");
           entry.className = "entry";
 
           entry.innerHTML = `
-          <div class="entry-title">${p.place_name}${p.budget ? " · " + p.budget : ""}</div>
-          <div class="entry-meta">${p.cuisine || ""}${p.area ? " · " + p.area : ""}</div>
-          <div class="entry-review">${p.review || ""}</div>
-          ${p.what_to_order ? `<div class="entry-meta" style="margin-top:6px;"><strong>What I recommend:</strong> ${p.what_to_order}</div>` : ""}
-        `;
+            <div class="entry-title">${p.place_name}${p.budget ? " · " + p.budget : ""}</div>
+            <div class="entry-meta">${p.cuisine || ""}${p.area ? " · " + p.area : ""}</div>
+            <div class="entry-review">${p.review || ""}</div>
+            ${p.what_to_order ? `<div class="entry-meta"><strong>What I recommend:</strong> ${p.what_to_order}</div>` : ""}
+            ${p.url ? `<div><a class="maps-link" href="${p.url}" target="_blank">Take me there →</a></div>` : ""}
+          `;
 
-          list.appendChild(entry);
+          entriesContainer.appendChild(entry);
 
-          // Marker
+          // Marker logic
           const marker = L.marker([+p.lat, +p.lng]).addTo(map);
           markers[p.place_name] = marker;
 
@@ -181,17 +235,16 @@
             <strong>${p.place_name}</strong><br>
             ${p.what_to_order || ""}<br><br>
             ${p.review || ""}
+            ${p.url ? `<br><a href="${p.url}" target="_blank">Open in Maps →</a>` : ""}
           `);
 
           entry.addEventListener("click", () => {
             map.setView(marker.getLatLng(), 15);
             marker.openPopup();
           });
-
         });
       }
     }
   </script>
-
 </body>
 </html>
