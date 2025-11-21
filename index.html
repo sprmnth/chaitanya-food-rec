@@ -53,6 +53,15 @@
       margin-bottom: 24px;
     }
 
+    /* Collapsed logic */
+    .entries {
+      display: block;
+    }
+
+    .city-section.collapsed .entries {
+      display: none;
+    }
+
     /* City headers */
     h2 {
       margin-top: 28px;
@@ -65,11 +74,6 @@
       letter-spacing: 0.2px;
       cursor: pointer;
       user-select: none;
-    }
-
-    /* Collapsed state */
-    .city-section.collapsed .entries {
-      display: none;
     }
 
     /* Arrow indicator */
@@ -192,16 +196,14 @@
       }
 
       for (const city of Object.keys(grouped).sort()) {
-        // Each city section container
-        const section = document.createElement("div");
-        section.className = "city-section collapsed";
 
-        // City title (clickable)
+        const section = document.createElement("div");
+        section.classList.add("city-section", "collapsed"); // ensures default collapsed
+
         const header = document.createElement("h2");
         header.textContent = city;
         section.appendChild(header);
 
-        // Container for entries inside this city
         const entriesContainer = document.createElement("div");
         entriesContainer.className = "entries";
         section.appendChild(entriesContainer);
@@ -227,7 +229,6 @@
 
           entriesContainer.appendChild(entry);
 
-          // Marker logic
           const marker = L.marker([+p.lat, +p.lng]).addTo(map);
           markers[p.place_name] = marker;
 
